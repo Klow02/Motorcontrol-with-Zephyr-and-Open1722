@@ -128,6 +128,16 @@ int main(void)
     udp_ziel(&ziel_pi, IP_PI, PORT_REGLER);
     avtp_sender_init(&tx, STREAM_ID_REGLER);
 
+    /* Lebenszeichen an ESP1: Dieselbe REGLER-Nachricht, aber nur 10x pro Sekunde.
+     * ESP1 schickt seine Messwerte erst mit voller Rate, wenn er davon hoert
+     * (sonst wuerde er mit Anfragen "wo ist ESP2?" das WLAN ueberfluten). */
+    struct sockaddr_in ziel_esp1;
+    avtp_sender_t tx_esp1;
+
+    udp_ziel(&ziel_esp1, IP_ESP1, PORT_HALLO);
+    avtp_sender_init(&tx_esp1, STREAM_ID_REGLER);
+    int hallo = 0;
+
     struct regelung regler;
 
     regelung_init(&regler);
@@ -197,6 +207,14 @@ int main(void)
             size_t laenge = avtp_paket_bauen(&tx, MSG_ID_REGLER, daten, paket);
 
             udp_senden(sock, &ziel_pi, paket, laenge);
+        }
+
+        if (++hallo >= 100 / REGEL_PERIODE_MS) {      /* alle 100 ms */
+            hallo = 0;
+            uint8_t paket[AVTP_PAKET_LAENGE];
+            size_t laenge = avtp_paket_bauen(&tx_esp1, MSG_ID_REGLER, daten, paket);
+
+            udp_senden(sock, &ziel_esp1, paket, laenge);
         }
 
         if (++ausgabe >= 1000 / REGEL_PERIODE_MS) {

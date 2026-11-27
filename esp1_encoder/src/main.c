@@ -121,6 +121,14 @@ int main(void)
     avtp_sender_init(&tx_esp2, STREAM_ID_MESSWERT);
     avtp_sender_init(&tx_pi, STREAM_ID_MESSWERT);
 
+    /* Lebenszeichen von ESP2 (kommt 10x pro Sekunde auf PORT_HALLO an).
+     * Solange ESP2 sich nicht meldet, schicken wir ihm nur 1 Paket pro Sekunde
+     * (zum Anklopfen). Mit voller Rate an eine nicht erreichbare Adresse zu
+     * senden erzeugt viele ARP-Anfragen und legt das WLAN lahm. */
+    int sock_hallo = udp_empfang_oeffnen(PORT_HALLO);
+    int64_t esp2_zeit_ms = -100000;      /* wann zuletzt ein Lebenszeichen kam */
+    int anklopfen = 0;
+
     /* Verlauf der letzten Zaehlerstaende fuer die Drehzahl-Berechnung */
     int32_t hist_zaehler[RPM_FENSTER];
     int64_t hist_zeit_ms[RPM_FENSTER];
@@ -196,7 +204,20 @@ int main(void)
         uint8_t paket[AVTP_PAKET_LAENGE];
         size_t laenge = avtp_paket_bauen(&tx_esp2, MSG_ID_MESSWERT, daten, paket);
 
-        udp_senden(sock, &ziel_esp2, paket, laenge);
+        /* Lebenszeichen von ESP2 abholen (ohne zu warten) */
+        uint8_t hallo_puffer[128];
+
+        while (sock_hallo >= 0 &&
+               zsock_recv(sock_hallo, hallo_puffer, sizeof(hallo_puffer), ZSOCK_MSG_DONTWAIT) > 0) {
+            esp2_zeit_ms = zeit_ms;
+        }
+        bool esp2_da = (zeit_ms - esp2_zeit_ms) < 1000;
+
+        /* An ESP2 mit voller Rate senden, wenn er da ist; sonst nur 1x pro Sekunde */
+        if (esp2_da || ++anklopfen >= 1000 / MESS_PERIODE_MS) {
+            anklopfen = 0;
+            udp_senden(sock, &ziel_esp2, paket, laenge);
+        }
 
         if (++teiler >= PI_TEILER) {
             teiler = 0;

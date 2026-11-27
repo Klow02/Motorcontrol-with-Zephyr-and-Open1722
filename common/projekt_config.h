@@ -40,6 +40,7 @@
 #define PORT_SOLLWERT   17221
 #define PORT_MESSWERT   17222
 #define PORT_REGLER     17223
+#define PORT_HALLO      17224   /* ESP2 -> ESP1: "ich bin da" (Lebenszeichen, siehe esp2 main.c) */
 
 #define STREAM_ID_SOLLWERT  0xAABBCCDD01000001ULL
 #define STREAM_ID_MESSWERT  0xAABBCCDD02000001ULL
