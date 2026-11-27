@@ -140,6 +140,12 @@ int main(void)
     for (;;) {
         /* Auf den naechsten 10-ms-Takt warten (feste Zeitraster, kein Driften) */
         naechster_takt += MESS_PERIODE_MS;
+        if (naechster_takt <= k_uptime_get()) {
+            /* Wir sind zu spaet dran (z.B. WLAN hat gebremst). Nicht im Eiltempo
+             * aufholen, sondern neu aufsetzen und mindestens 1 ms schlafen, damit
+             * die Netzwerk-Threads auch drankommen. */
+            naechster_takt = k_uptime_get() + 1;
+        }
         k_sleep(K_TIMEOUT_ABS_MS(naechster_takt));
 
         /* 1) Zaehlerstand lesen */

@@ -140,6 +140,12 @@ int main(void)
     for (;;) {
         /* Festes 10-ms-Zeitraster */
         naechster_takt += REGEL_PERIODE_MS;
+        if (naechster_takt <= k_uptime_get()) {
+            /* Wir sind zu spaet dran (z.B. WLAN hat gebremst). Nicht im Eiltempo
+             * aufholen, sondern neu aufsetzen und mindestens 1 ms schlafen, damit
+             * die Netzwerk-Threads auch drankommen. */
+            naechster_takt = k_uptime_get() + 1;
+        }
         k_sleep(K_TIMEOUT_ABS_MS(naechster_takt));
 
         int64_t jetzt = k_uptime_get();

@@ -159,5 +159,9 @@ int udp_ziel(struct sockaddr_in *ziel, const char *ip, uint16_t port)
 
 int udp_senden(int sock, const struct sockaddr_in *ziel, const uint8_t *daten, size_t laenge)
 {
-    return (int)zsock_sendto(sock, daten, laenge, 0, (const struct sockaddr *)ziel, sizeof(*ziel));
+    /* ZSOCK_MSG_DONTWAIT = nie warten. Sind die Netz-Puffer gerade voll, geht nur
+     * dieses eine Paket verloren (kommt 5-10 ms spaeter wieder), aber die
+     * Regelschleife bleibt nicht haengen und blockiert nicht die Netzwerk-Threads. */
+    return (int)zsock_sendto(sock, daten, laenge, ZSOCK_MSG_DONTWAIT, (const struct sockaddr *)ziel,
+                             sizeof(*ziel));
 }
