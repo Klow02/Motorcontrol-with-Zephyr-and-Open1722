@@ -102,6 +102,7 @@ int netzwerk_start(const char *meine_ip)
     }
 
     /* Feste IP-Adresse, Netzmaske und Gateway setzen */
+    LOG_INF("Setze IP-Adresse %s ...", meine_ip);   /* Diagnose: hier sieht man, ob es hier haengt */
     struct in_addr adresse, maske, gateway;
 
     if (net_addr_pton(AF_INET, meine_ip, &adresse) || net_addr_pton(AF_INET, IP_NETMASK, &maske) ||
