@@ -43,11 +43,6 @@ static void wifi_ereignis(struct net_mgmt_event_callback *cb, uint64_t ereignis,
         const struct wifi_status *status = cb->info;
 
         LOG_WRN("Verbindung getrennt, Grund %d", status->disconn_reason);
-        /* Ein Abbruch beendet auch das Warten in netzwerk_start(): Dort wird dann
-         * sofort neu versucht, statt bis zu 20 s auf ein Ergebnis zu warten
-         * (z.B. Grund 208: der Access Point kennt uns nach einem Reset noch). */
-        wlan_status = -1;
-        k_sem_give(&wlan_ergebnis);
     }
 }
 
