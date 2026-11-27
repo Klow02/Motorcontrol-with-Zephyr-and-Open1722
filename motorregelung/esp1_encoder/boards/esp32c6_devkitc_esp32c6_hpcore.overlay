@@ -1,0 +1,44 @@
+/*
+ * Pin-Belegung ESP1 (Encoder-Knoten) fuer das ESP32-C6-DevKitC
+ * =============================================================
+ * Die Pin-Nummern sind GPIO-Nummern (nicht die Nummer der Pin-Reihe).
+ * Gemieden werden die Strapping-Pins GPIO4/5/8/9/15 und UART0 (GPIO16/17).
+ *
+ *   GPIO0  <- Encoder Kanal A   (3,3 V Pegel! siehe README)
+ *   GPIO1  <- Encoder Kanal B
+ *   GPIO2  -> CAN-Transceiver TXD
+ *   GPIO3  <- CAN-Transceiver RXD
+ */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+
+/ {
+	zephyr,user {
+		/* Hall-Encoder: Eingaenge mit Pull-Up (Open-Collector-Ausgaenge) */
+		encoder-a-gpios = <&gpio0 0 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+		encoder-b-gpios = <&gpio0 1 (GPIO_ACTIVE_HIGH | GPIO_PULL_UP)>;
+	};
+};
+
+&pinctrl {
+	twai0_default: twai0_default {
+		group1 {
+			pinmux = <TWAI0_TX_GPIO2>;
+			output-high;            /* CAN ist im Ruhezustand "high" */
+		};
+		group2 {
+			pinmux = <TWAI0_RX_GPIO3>;
+			bias-pull-up;
+		};
+	};
+};
+
+&twai0 {
+	pinctrl-0 = <&twai0_default>;
+	pinctrl-names = "default";
+	bitrate = <500000>;             /* muss zu CAN_BITRATE in projekt_config.h passen */
+	status = "okay";
+
+	can-transceiver {
+		max-bitrate = <1000000>;
+	};
+};

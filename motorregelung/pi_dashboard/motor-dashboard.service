@@ -1,0 +1,14 @@
+# systemd-Dienst: startet das Dashboard beim Booten des Pi.
+# Pfad bei ExecStart/WorkingDirectory und Benutzer ggf. anpassen.
+[Unit]
+Description=Motorsteuerung Dashboard
+After=network-online.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/motorregelung/pi_dashboard
+ExecStart=/usr/bin/python3 dashboard.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

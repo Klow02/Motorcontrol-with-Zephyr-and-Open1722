@@ -1,0 +1,74 @@
+/*
+ * Pin-Belegung ESP2 (Regler-Knoten) fuer das ESP32-C6-DevKitC
+ * ============================================================
+ * Die Pin-Nummern sind GPIO-Nummern. Gemieden werden die Strapping-Pins
+ * GPIO4/5/8/9/15 und UART0 (GPIO16/17).
+ *
+ *   GPIO0  -> Motor PWM            (Monster Moto Shield: PWM1 / H-Bruecke: ENA)
+ *   GPIO1  -> Motor INA            (Monster Moto Shield: INA1 / H-Bruecke: IN1)
+ *   GPIO6  -> Motor INB            (Monster Moto Shield: INB1 / H-Bruecke: IN2)
+ *   GPIO7  -> Motor Enable         (Monster Moto Shield: EN1/DIAG1)   [optional]
+ *   GPIO2  -> CAN-Transceiver TXD
+ *   GPIO3  <- CAN-Transceiver RXD
+ *
+ * Monster Moto Shield: Kanal 2 (INA2/INB2/PWM2) bleibt unbenutzt.
+ * Die Shield-Logik laeuft mit 5 V -> Pegelanpassung noetig, siehe README.
+ */
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/pwm/pwm.h>
+
+/ {
+	zephyr,user {
+		/* PWM-Kanal 0 des LEDC, Periode 50 us = 20 kHz (nicht hoerbar) */
+		pwms = <&ledc0 0 PWM_USEC(50) PWM_POLARITY_NORMAL>;
+		motor-ina-gpios = <&gpio0 1 GPIO_ACTIVE_HIGH>;
+		motor-inb-gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+		/* Enable-Pin nur eintragen, wenn dein Shield/Modul einen hat; sonst
+		 * die folgende Zeile loeschen. */
+		motor-en-gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+	};
+};
+
+&pinctrl {
+	ledc0_default: ledc0_default {
+		group1 {
+			pinmux = <LEDC_CH0_GPIO0>;
+			output-enable;
+		};
+	};
+
+	twai0_default: twai0_default {
+		group1 {
+			pinmux = <TWAI0_TX_GPIO2>;
+			output-high;            /* CAN ist im Ruhezustand "high" */
+		};
+		group2 {
+			pinmux = <TWAI0_RX_GPIO3>;
+			bias-pull-up;
+		};
+	};
+};
+
+&ledc0 {
+	pinctrl-0 = <&ledc0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel0@0 {
+		reg = <0x0>;
+		timer = <0>;
+	};
+};
+
+&twai0 {
+	pinctrl-0 = <&twai0_default>;
+	pinctrl-names = "default";
+	bitrate = <500000>;             /* muss zu CAN_BITRATE in projekt_config.h passen */
+	status = "okay";
+
+	can-transceiver {
+		max-bitrate = <1000000>;
+	};
+};
